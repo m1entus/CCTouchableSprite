@@ -16,9 +16,9 @@ typedef void(^CCSpriteTouchBlock)(CCSprite *sprite);
 
 
 @interface CCTouchableSprite()  <CCTargetedTouchDelegate>
-{
-    NSInvocation *invocation_;
-}
+
+@property (nonatomic,retain) NSInvocation *invocation;
+
 @property (nonatomic,assign) BOOL isTouchDelegateEnabled;
 @property (nonatomic,assign) BOOL isTouched;
 
@@ -39,6 +39,7 @@ typedef void(^CCSpriteTouchBlock)(CCSprite *sprite);
 @synthesize isTouchDelegateEnabled = _isTouchDelegateEnabled;
 @synthesize isTouched = _isTouched;
 @synthesize debugDraw = _debugDraw;
+@synthesize invocation = _invocation;
 
 #if NS_BLOCKS_AVAILABLE
 
@@ -75,16 +76,18 @@ typedef void(^CCSpriteTouchBlock)(CCSprite *sprite);
     if( target && action ) {
         sig = [target methodSignatureForSelector:action];
         
-        invocation_ = nil;
-        invocation_ = [NSInvocation invocationWithMethodSignature:sig];
-        [invocation_ setTarget:target];
-        [invocation_ setSelector:action];
+        if (self.invocation) {
+            [_invocation release];
+        }
+        
+        self.invocation = nil;
+        self.invocation = [NSInvocation invocationWithMethodSignature:sig];
+        [self.invocation setTarget:target];
+        [self.invocation setSelector:action];
 #if NS_BLOCKS_AVAILABLE
         if ([sig numberOfArguments] == 3)
 #endif
-			[invocation_ setArgument:&self atIndex:2];
-        
-        [invocation_ retain];
+			[self.invocation setArgument:&self atIndex:2];
     }
 }
 
@@ -146,17 +149,17 @@ typedef void(^CCSpriteTouchBlock)(CCSprite *sprite);
         {
             self.touchableBlock(self);
         }
-        else if(invocation_)
+        else if(self.invocation)
         {
-            [invocation_ invoke];
+            [self.invocation invoke];
         }
 #else
-        if(invocation_)
+        if(self.invocation)
         {
-            [invocation_ invoke];
+            [self.invocation invoke];
         }
 #endif
-        if (self.touchableBlock || invocation_) {
+        if (self.touchableBlock || self.invocation) {
             return YES;
         }
     }
@@ -253,8 +256,8 @@ void ccFillPoly( CGPoint *poli, int points, BOOL closePolygon )
 - (void)dealloc
 {
 
-    if (invocation_) {
-        [invocation_ release];
+    if (_invocation) {
+        [_invocation release];
     }
 
 #if NS_BLOCKS_AVAILABLE
