@@ -12,14 +12,13 @@ typedef BOOL(^CCSpriteTouchBegan)(UITouch *touch, UIEvent *event);
 typedef void(^CCSpriteTouchEnded)(UITouch *touch, UIEvent *event);
 typedef void(^CCSpriteTouchMoved)(UITouch *touch, UIEvent *event);
 typedef void(^CCSpriteTouchCancelled)(UITouch *touch, UIEvent *event);
-typedef void(^CCSpriteTouchBlock)(CCSprite *sprite);
+typedef void(^CCSpriteTouchBlock)(CCTouchableSprite *sprite);
 
 
 @interface CCTouchableSprite()  <CCTargetedTouchDelegate>
 
 @property (nonatomic,retain) NSInvocation *invocation;
 
-@property (nonatomic,assign) BOOL isTouchDelegateEnabled;
 @property (nonatomic,assign) BOOL isTouched;
 
 @property (nonatomic,copy) CCSpriteTouchBegan touchBegan;
@@ -36,10 +35,10 @@ typedef void(^CCSpriteTouchBlock)(CCSprite *sprite);
 @synthesize touchEnded = _touchEnded;
 @synthesize touchCancelled = _touchCancelled;
 @synthesize touchMoved = _touchMoved;
-@synthesize isTouchDelegateEnabled = _isTouchDelegateEnabled;
 @synthesize isTouched = _isTouched;
 @synthesize debugDraw = _debugDraw;
 @synthesize invocation = _invocation;
+@synthesize isTouchEnabled = _isTouchEnabled;
 
 #if NS_BLOCKS_AVAILABLE
 
@@ -63,7 +62,7 @@ typedef void(^CCSpriteTouchBlock)(CCSprite *sprite);
     self.touchMoved = movedBlock;
 }
 
-- (void)setTouchBlock:(void(^)(CCSprite *sprite))block
+- (void)setTouchBlock:(void(^)(CCTouchableSprite *sprite))block
 {
     self.touchableBlock = block;
 }
@@ -102,16 +101,34 @@ typedef void(^CCSpriteTouchBlock)(CCSprite *sprite);
 
 - (void)setTouchPriority:(NSNumber *)touchPriority
 {
+    self.isTouchEnabled = NO;
+    
     [_touchPriority release];
     _touchPriority = [touchPriority retain];
     
-    if (self.isTouchDelegateEnabled) {
-        [[CCTouchDispatcher sharedDispatcher] removeDelegate:self];
-        self.isTouchDelegateEnabled = NO;
-    }
-    
-    [[CCTouchDispatcher sharedDispatcher] addTargetedDelegate:self priority:[self.touchPriority integerValue] swallowsTouches:YES];
-    self.isTouchDelegateEnabled = YES;
+    self.isTouchEnabled = YES;
+}
+
+- (BOOL)isTouchEnabled
+{
+	return _isTouchEnabled;
+}
+
+- (void)setIsTouchEnabled:(BOOL)enabled
+{
+	if( _isTouchEnabled != enabled ) {
+		_isTouchEnabled = enabled;
+        if( enabled )
+            [self registerWithTouchDispatcher];
+        else
+            [[CCTouchDispatcher sharedDispatcher] removeDelegate:self];
+		
+	}
+}
+
+-(void) registerWithTouchDispatcher
+{
+	[[CCTouchDispatcher sharedDispatcher] addTargetedDelegate:self priority:[self.touchPriority integerValue] swallowsTouches:YES];
 }
 
 - (CGRect)spriteRect
@@ -123,9 +140,7 @@ typedef void(^CCSpriteTouchBlock)(CCSprite *sprite);
 {
     [super onEnter];
     
-    if (self.isTouchDelegateEnabled == NO) {
-        [[CCTouchDispatcher sharedDispatcher] addTargetedDelegate:self priority:[self.priority integerValue] swallowsTouches:YES];
-    }
+    self.isTouchEnabled = YES;
     
 }
 
