@@ -271,38 +271,33 @@ void ccFillPoly( CGPoint *poli, int points, BOOL closePolygon )
 - (void)dealloc
 {
 
-    if (_invocation) {
-        [_invocation release];
-    }
+    [_invocation release];
 
 #if NS_BLOCKS_AVAILABLE
-    if (_touchEnded) {
-        [_touchEnded release];
-        _touchEnded = nil;
-    }
-    if (_touchBegan) {
-        [_touchBegan release];
-        _touchBegan = nil;
-    }
-    if (_touchableBlock) {
-        [_touchableBlock release];
-        _touchableBlock = nil;
-    }
-    if (_touchCancelled) {
-        [_touchCancelled release];
-        _touchCancelled = nil;
-    }
-    if (_touchMoved) {
-        [_touchMoved release];
-        _touchMoved = nil;
-    }
+
+    [_touchEnded release];
+     _touchEnded = nil;
+
+    [_touchBegan release];
+    _touchBegan = nil;
+
+    [_touchableBlock release];
+     _touchableBlock = nil;
+
+    [_touchCancelled release];
+    _touchCancelled = nil;
+
+    [_touchMoved release];
+    _touchMoved = nil;
     
 #endif
     
     [_touchPriority release];
     _touchPriority = nil;
-
-    [[CCTouchDispatcher sharedDispatcher] removeDelegate:self];
+	
+	if (self.isTouchEnabled)
+    	[[CCTouchDispatcher sharedDispatcher] removeDelegate:self];
+    	
     [super dealloc];
 }
 
