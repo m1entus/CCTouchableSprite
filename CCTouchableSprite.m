@@ -268,6 +268,14 @@ void ccFillPoly( CGPoint *poli, int points, BOOL closePolygon )
     
 }
 
+- (void)onExit
+{
+    self.isTouchEnabled = NO;
+    
+    [super onExit];
+    
+}
+
 - (void)dealloc
 {
 
@@ -295,9 +303,6 @@ void ccFillPoly( CGPoint *poli, int points, BOOL closePolygon )
     [_touchPriority release];
     _touchPriority = nil;
 	
-	if (self.isTouchEnabled)
-    	[[CCTouchDispatcher sharedDispatcher] removeDelegate:self];
-    	
     [super dealloc];
 }
 
