@@ -7,6 +7,7 @@
 
 #import "CCTouchableSprite.h"
 
+#define COCOS2D_V2 (COCOS2D_VERSION >= 0x00020000)
 
 typedef BOOL(^CCSpriteTouchBegan)(UITouch *touch, UIEvent *event);
 typedef void(^CCSpriteTouchEnded)(UITouch *touch, UIEvent *event);
@@ -120,20 +121,24 @@ typedef void(^CCSpriteTouchBlock)(CCTouchableSprite *sprite);
 		_isTouchEnabled = enabled;
         if( enabled )
             [self registerWithTouchDispatcher];
-        else
+        else 
+#if COCOS2D_V2
+            [[CCDirector sharedDirector] touchDispatcher];
+#else
             [[CCTouchDispatcher sharedDispatcher] removeDelegate:self];
-		
+#endif
+            
 	}
 }
 
 -(void) registerWithTouchDispatcher
 {
-	[[CCTouchDispatcher sharedDispatcher] addTargetedDelegate:self priority:[self.touchPriority integerValue] swallowsTouches:YES];
-}
-
-- (CGRect)spriteRect
-{
-    return CGRectMake((self.offsetPositionInPixels.x +self.positionInPixels.x) / CC_CONTENT_SCALE_FACTOR(), (self.offsetPositionInPixels.y +self.positionInPixels.y) / CC_CONTENT_SCALE_FACTOR(), self.textureRect.size.width, self.textureRect.size.height);
+#if COCOS2D_V2
+    [[[CCDirector sharedDirector] touchDispatcher] addTargetedDelegate:self priority:[self.touchPriority integerValue] swallowsTouches:YES];
+#else
+    [[CCTouchDispatcher sharedDispatcher] addTargetedDelegate:self priority:[self.touchPriority integerValue] swallowsTouches:YES];
+#endif
+	
 }
 
 - (void)onEnter
@@ -153,10 +158,10 @@ typedef void(^CCSpriteTouchBlock)(CCTouchableSprite *sprite);
         return self.touchBegan(touch,event);
     }
 #endif
+    CGPoint location = [touch locationInView: [touch view]];
+    CGPoint touchLocation = [[CCDirector sharedDirector]convertToGL:location];
 
-    CGPoint touchLocation = [self convertTouchToNodeSpace:touch];
-    
-    if (CGRectContainsPoint([self spriteRect], touchLocation)) {
+    if (CGRectContainsPoint([self boundingBox], touchLocation)) {
         
 #if NS_BLOCKS_AVAILABLE
         //changed behavior in iOS6, sender of block is nil, so invocation fails, executing block does work
@@ -212,58 +217,52 @@ typedef void(^CCSpriteTouchBlock)(CCTouchableSprite *sprite);
 #endif
 }
 
-void ccFillPoly( CGPoint *poli, int points, BOOL closePolygon )
-{
-    // Default GL states: GL_TEXTURE_2D, GL_VERTEX_ARRAY, GL_COLOR_ARRAY, GL_TEXTURE_COORD_ARRAY
-    // Needed states: GL_VERTEX_ARRAY,
-    // Unneeded states: GL_TEXTURE_2D, GL_TEXTURE_COORD_ARRAY, GL_COLOR_ARRAY
-    glDisable(GL_TEXTURE_2D);
-    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    glDisableClientState(GL_COLOR_ARRAY);
-    
-    glVertexPointer(2, GL_FLOAT, 0, poli);
-    if( closePolygon )
-        glDrawArrays(GL_TRIANGLE_FAN, 0, points);
-    else
-        glDrawArrays(GL_LINE_STRIP, 0, points);
-    
-    // restore default state
-    glEnableClientState(GL_COLOR_ARRAY);
-    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    glEnable(GL_TEXTURE_2D);
-}
-
 - (void) draw {
 
     [super draw];
     
 	if (self.debugDraw) {
+#if COCOS2D_V2
+        ccGLEnableVertexAttribs(kCCVertexAttribFlag_Color );
+#else
         glDisable(GL_TEXTURE_2D);
         glDisableClientState(GL_COLOR_ARRAY);
         glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+#endif
         
         if (self.isTouched) {
+#if COCOS2D_V2
+            ccColor4F color [4] = {255,255,0,50};
+            glVertexAttribPointer(kCCVertexAttrib_Color, 4, GL_FLOAT, GL_FALSE, 0, color);
+            ccDrawColor4B(255,255,0,50);
+#else
             glColor4ub(255, 255, 0, 50);
+#endif
         } else {
+#if COCOS2D_V2
+            ccColor4F color [4] = {0,255,0,50};
+            glVertexAttribPointer(kCCVertexAttrib_Color, 4, GL_FLOAT, GL_FALSE, 0, color);
+            ccDrawColor4B(0,255,0,50);
+#else
             glColor4ub(0, 255, 0, 50);
+#endif
         }
         glLineWidth(1);
         
-        CGRect spriteRect = [self spriteRect];
-        
-        CGPoint vertices2[] = { ccp(spriteRect.origin.x, spriteRect.origin.y),
-            ccp(spriteRect.origin.x, spriteRect.origin.y + spriteRect.size.height),
-            ccp(spriteRect.origin.x + spriteRect.size.width, spriteRect.origin.y + spriteRect.size.height),
-            ccp(spriteRect.origin.x + spriteRect.size.width, spriteRect.origin.y)
+        CGSize s = self.textureRect.size;
+        CGPoint offsetPix = self.offsetPosition;
+        CGPoint vertices[4] = {
+            ccp(offsetPix.x,offsetPix.y), ccp(offsetPix.x+s.width,offsetPix.y),
+            ccp(offsetPix.x+s.width,offsetPix.y+s.height), ccp(offsetPix.x,offsetPix.y+s.height)
         };
-        
-        ccFillPoly( vertices2, 4, YES);
-        
+        ccDrawPoly(vertices, 4, YES);
+#if !COCOS2D_V2
         glColor4ub(255,255,255,255);
         
         glEnable(GL_TEXTURE_2D);
         glEnableClientState(GL_COLOR_ARRAY);
         glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+#endif
     }
     
 }

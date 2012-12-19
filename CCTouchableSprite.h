@@ -8,7 +8,6 @@
 #import <Foundation/Foundation.h>
 #import "cocos2d.h"
 
-
 @interface CCTouchableSprite : CCSprite
 @property (nonatomic, retain) NSNumber *touchPriority;
 @property (nonatomic, assign) BOOL debugDraw;
