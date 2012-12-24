@@ -123,7 +123,7 @@ typedef void(^CCSpriteTouchBlock)(CCTouchableSprite *sprite);
             [self registerWithTouchDispatcher];
         else 
 #if COCOS2D_V2
-            [[CCDirector sharedDirector] touchDispatcher];
+            [[[CCDirector sharedDirector] touchDispatcher] removeDelegate:self];
 #else
             [[CCTouchDispatcher sharedDispatcher] removeDelegate:self];
 #endif
