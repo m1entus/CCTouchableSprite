@@ -277,7 +277,8 @@ typedef void(^CCSpriteTouchBlock)(CCTouchableSprite *sprite);
 
 - (void)dealloc
 {
-
+	self.isTouchEnabled = NO;
+	
     [_invocation release];
 
 #if NS_BLOCKS_AVAILABLE
